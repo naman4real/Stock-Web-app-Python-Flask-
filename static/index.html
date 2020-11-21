@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="static/main.css">
+    <link rel="stylesheet" href="static/all.css">
+    <script src="static/func.js"></script>
+    <script src="https://code.highcharts.com/stock/highstock.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/data.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/export-data.js"></script>
+    <title>HW6</title>
+</head>
+<body>
+
+
+    <script type="text/javascript">
+
+        // var tick = document.getElementById("ticker");
+        // tick.addEventListener('tick',hideAlert);
+        
+        // function hideAlert(){
+        //     var a=document.getElementById("cancel101");
+        //     if(a.className=''){
+        //         a.className='hidden';
+        //     }
+        // }
+
+
+        
+
+        function makeRequest(e) {
+            e.preventDefault();
+            var text=document.getElementById("ticker").value;
+            xhrTab1=new XMLHttpRequest();
+            xhrTab2=new XMLHttpRequest();
+            xhrTab3=new XMLHttpRequest();
+            xhrTab4=new XMLHttpRequest();
+
+           // document.getElementById("barB1").autofocus=true;
+           
+            
+            var flag=0;
+            //first tab
+            var companyName = document.getElementById("companyName");
+            var symbol = document.getElementById("symbol");
+            var code = document.getElementById("code");
+            var startDate = document.getElementById("startDate");
+            var desc = document.getElementById("desc");
+
+            //second tab
+            var symbol2 = document.getElementById("symbol2");
+            var tradingDay = document.getElementById("tradingDay");
+            var closingPrice = document.getElementById("closingPrice");
+            var openingPrice = document.getElementById("openingPrice");
+            var highPrice = document.getElementById("highPrice");
+            var lowPrice = document.getElementById("lowPrice");
+            var lastPrice = document.getElementById("lastPrice");
+            var change = document.getElementById("change");
+            var changePercent = document.getElementById("changePercent");
+            var numShares = document.getElementById("numShares");
+
+            //third tab
+            var price=[];
+            var volume=[];
+            
+
+            xhrTab1.onreadystatechange = function()
+            {
+                if(this.readyState == 4 && this.status == 200) {
+                    
+                    jsonData=JSON.parse(this.responseText);
+                    if(!jsonData['detail']){
+                        //console.log(jsonData['name'])
+                        companyName.innerHTML = jsonData['name'];
+                        symbol.innerHTML = jsonData['ticker'];
+                        code.innerHTML = jsonData['exchangeCode'];
+                        startDate.innerHTML = jsonData['startDate'];
+                        desc.innerHTML = jsonData['description'];
+                        document.getElementById('main').style.display="block";
+                        showTab(1);
+                        document.getElementById('error').style.display="none";
+
+                    }
+                    else{
+                        document.getElementById('main').style.display="none";
+                        document.getElementById('error').style.display="block";
+
+                    }
+      
+                } 
+
+            };
+
+            xhrTab2.onreadystatechange = function()
+            {
+                if(this.readyState == 4 && this.status == 200 && flag==0) {
+                    jsonData=JSON.parse(this.responseText);
+                    //console.log(jsonData);
+                    if(jsonData){
+                        symbol2.innerHTML = jsonData['ticker'];
+                        tradingDay.innerHTML = jsonData['timestamp'].slice(0,10);
+                        closingPrice.innerHTML= jsonData['prevClose'];
+                        openingPrice.innerHTML = jsonData['open'];
+                        lastPrice.innerHTML=jsonData['last'];
+                        highPrice.innerHTML = jsonData['high'];
+                        lowPrice.innerHTML = jsonData['low'];
+                        lastPrice=parseFloat(jsonData['last'])
+                        openingPrice=parseFloat(jsonData['open'])
+                        
+                        if((lastPrice-openingPrice)>0){
+                            changePercent.innerHTML = ((lastPrice-openingPrice)/openingPrice*100).toFixed(2) + "%" + "<img class=\"arrow\" src=\"https://csci571.com/hw/hw6/images/GreenArrowUp.jpg\"/>";
+                            change.innerHTML = (lastPrice-openingPrice).toFixed(2) + "<img class=\"arrow\" src=\"https://csci571.com/hw/hw6/images/GreenArrowUp.jpg\"/>";
+                        }
+                            
+                        else if((lastPrice-openingPrice)<0){
+
+                            changePercent.innerHTML = ((lastPrice-openingPrice)/openingPrice*100).toFixed(2) + "%" + "<img class=\"arrow\" src=\"https://csci571.com/hw/hw6/images/RedArrowDown.jpg\"/>";
+                            change.innerHTML = (lastPrice-openingPrice).toFixed(2) + "<img class=\"arrow\" src=\"https://csci571.com/hw/hw6/images/RedArrowDown.jpg\"/>";
+                        }
+                        
+
+                        numShares.innerHTML = jsonData['volume'];
+                    }
+
+                   
+                } 
+            };
+
+            xhrTab3.onreadystatechange = function()
+            {
+                if(this.readyState == 4 && this.status == 200 && flag==0) {
+                
+                    jsonData=JSON.parse(this.responseText);
+                    //console.log(jsonData);
+                    if(!jsonData['detail']){
+                        for(var obj in jsonData){
+                        item=jsonData[obj];
+                        var date=Date.UTC(item['date'].slice(0,4),parseInt(item['date'].slice(5,7))-1,item['date'].slice(8,10));                        price.push([date,item['close']]);
+                        volume.push([date,item['volume']]);
+
+                        }
+                    
+                        var chart1;
+                        var today = new Date();
+                        var dd = String(today.getDate()).padStart(2, '0');
+                        var mm = String(today.getMonth() + 1).padStart(2, '0');
+                        var yyyy = today.getFullYear();
+
+                        chart1 = Highcharts.stockChart('barButton3', {
+
+                            title: {
+                                text: 'Stock Price '+text.toUpperCase()+' '+yyyy+"-"+mm+"-"+dd
+                            },
+
+                            subtitle: {
+                                text: '<a href="https://api.tiingo.com/" target="_blank">Source: Tiingo</a>',
+                                useHTML:true,
+                                style:{
+                                    textDecoration: 'underline',
+                                    color: 'blue'
+                                }
+                     
+                            },
+
+                            xAxis: {
+                                gapGridLineWidth: 0,
+
+                            }, 
+
+                            yAxis:[{
+                                title:{
+                                    text: 'Volume'                                 
+                                },   
+                                labels: {
+                                    align: 'left'
+                                }
+            
+                                },{
+                                title:{
+                                    text: 'Stock Price'
+                                },
+                                labels: {
+                                    align: 'right'
+                                },
+                                opposite: false
+                            }],
+
+
+                            rangeSelector: {
+                                buttons: [{
+                                    type: 'day',
+                                    count: 7,
+                                    text: '7d'
+                                }, {
+                                    type: 'day',
+                                    count: 15,
+                                    text: '15d'
+                                }, {
+                                    type: 'month',
+                                    count: 1,
+                                    text: '1m'
+                                },{
+                                    type: 'month',
+                                    count: 3,
+                                    text: '3m'
+                                },{
+                                    type: 'month',
+                                    count: 6,
+                                    text: '6m'
+                                }],
+
+                                inputEnabled: false
+                            },
+
+                            series: [{
+                                
+                                name: text.toUpperCase(),
+                                type: 'area',
+                                data: price,
+                                yAxis: 1,
+                                gapSize: 5,
+                                tooltip: {valueDecimals: 2 },
+
+                                
+                                fillColor: {
+                                    linearGradient: {
+                                        x1: 0,
+                                        y1: 0,
+                                        x2: 0,
+                                        y2: 1
+                                    },
+                                    stops: [
+                                        [0, Highcharts.getOptions().colors[0]],
+                                        [1, Highcharts.color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
+                                    ]
+                                },
+                                threshold: null
+                            },{
+                                pointWidth: 2,
+                                name: text.toUpperCase(),
+                                type: 'column',
+                                data: volume,
+                                yAxis: 0,
+                                gapSize: 5,
+                                tooltip: {valueDecimals: 2 },
+
+                                
+                                fillColor: {
+                                    linearGradient: {
+                                        x1: 0,
+                                        y1: 0,
+                                        x2: 0,
+                                        y2: 1
+                                    },
+                                    stops: [
+                                        [0, Highcharts.getOptions().colors[0]],
+                                        [1, Highcharts.color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
+                                    ]
+                                },
+                                threshold: null
+                            }]
+                        })
+                        
+                    }
+                } 
+            };
+
+            xhrTab4.onreadystatechange = function()
+            {
+                var articlesToPresent=[];
+                if(this.readyState == 4 && this.status == 200 && flag==0) {
+                    jsonData=JSON.parse(this.responseText);
+                    item=jsonData['articles'];
+                    for(var i=0;i<item.length;i++){
+                        article=item[i];
+                        if(articlesToPresent.length<=4){
+                            if (article['title'] && article['url'] && article['urlToImage'] && article['publishedAt']){
+                            articlesToPresent.push(article);
+                            }
+                        }          
+                    }
+
+                    for(var i=0;i<articlesToPresent.length;i++){
+                        if(i+1<=5){
+                            document.getElementById('img'+(i+1)).src=articlesToPresent[i]['urlToImage'];
+                            currentTitle=document.getElementById('title'+(i+1));
+                            currentTitle.innerHTML=articlesToPresent[i]['title'];
+                            currentTitle.style.fontWeight="bold";
+
+                            //calculate date in mm/dd/yyyy
+                            date=articlesToPresent[i]['publishedAt'].slice(0,10);
+                            day=date.slice(8,10);
+                            month=date.slice(5,7);
+                            year=date.slice(0,4);
+
+                            document.getElementById('date'+(i+1)).innerHTML+=month+"/"+day+"/"+year;
+                            document.getElementById('url'+(i+1)).href=articlesToPresent[i]['url'];
+
+                        }
+                    }
+                } 
+            };
+            if(text){
+                xhrTab1.open("GET","/companyOutlook?ticker="+text,true);
+                xhrTab1.send();
+
+                xhrTab2.open("GET","/stockSummary?ticker="+text,true);
+                xhrTab2.send();
+
+                xhrTab3.open("GET","/chart?ticker="+text,true);
+                xhrTab3.send();
+
+                xhrTab4.open("GET","/news?ticker="+text,true);
+                xhrTab4.send();
+            }
+            
+            else{
+            
+            }
+        }
+
+        function hide(){
+            document.getElementById('main').style.display="none";
+            document.getElementById('ticker').value="";
+            document.getElementById('error').style.display="none";
+        }
+
+        function showTab(tab){
+            // if(tab==2 || tab==3 || tab==4 && document.getElementById("barB1").style.backgroundColor!="#e8e8e8 "){
+            //     document.getElementById("barB1").style.backgroundColor="#e8e8e8 ";
+            // }
+            for(var i=1;i<5;i++){
+                if(i==tab){
+                    document.getElementById("barButton_"+i).style.backgroundColor="#c0c0c0";
+                    document.getElementById("barButton"+i).style.display="block";
+                    document.getElementById("barButton_"+i).style.pointerEvents="none";
+                }
+                else{
+                    document.getElementById("barButton_"+i).style.backgroundColor="#e8e8e8";
+                    document.getElementById("barButton"+i).style.display="none";
+                    document.getElementById("barButton_"+i).style.pointerEvents="auto";
+                }               
+            }
+        }
+   
+
+
+    </script>
+
+
+    <form class="container" onsubmit="return makeRequest(event)">
+        <h1>Stock Search</h1>
+        <label for="ticker">Enter Stock Ticker Symbol</label>
+        <input type="text" id="ticker" name="ticker" value="" required><br><br><br>
+        
+        <button class="button" type="submit"> Search</button>
+        <button  class="button" onclick="hide()" type="reset"> Clear </button>
+    </form>
+    <div class="line"></div>
+    <div id="main">
+        
+        <div class="bar">
+            <button id="barButton_1" class="barButton" onclick="showTab(1)" type="button"> Company Outlook </button>
+            <button id="barButton_2" class="barButton" onclick="showTab(2)"> Stock Summary </button>
+            <button id="barButton_3" class="barButton" onclick="showTab(3)"> Charts </button>
+            <button id="barButton_4" class="barButton" onclick="showTab(4)"> Latest News </button>
+        </div>
+       
+
+        <div class="infoTable" id="barButton1">
+            <table class="table">
+                <tr>
+                    <td>Company Name</td>
+                    <td id="companyName">My Company</td>
+                </tr>
+                <tr>
+                    <td>Stock Ticker Symbol</td>
+                    <td id="symbol">My Company</td>
+                </tr>
+                <tr>
+                    <td>Stock Exchange Code</td>
+                    <td id="code">My Company</td>
+                </tr>
+                <tr>
+                    <td>Company Start Date</td>
+                    <td id="startDate">My Company</td>
+                </tr>
+                <tr>
+                    <td>Description</td>
+                    <td id="desc" style="border-bottom: none;">My Company</td>
+                </tr>
+            </table>
+    
+        </div>
+
+        <div class="infoTable" id="barButton2">
+            <table class="table">
+                <tr>
+                    <td>Stock Ticker Symbol</td>
+                    <td id="symbol2">My Company</td>
+                </tr>
+                <tr>
+                    <td>Trading Day</td>
+                    <td id="tradingDay">My Company</td>
+                </tr>
+                <tr>
+                    <td>Previous Closing Price</td>
+                    <td id="closingPrice">My Company</td>
+                </tr>
+                <tr>
+                    <td>Opening Price</td>
+                    <td id="openingPrice">My Company</td>
+                </tr>
+                <tr>
+                    <td>High Price</td>
+                    <td id="highPrice">My Company</td>
+                </tr>
+                <tr>
+                    <td>Low Price</td>
+                    <td id="lowPrice">My Company</td>
+                </tr>
+                <tr>
+                    <td>Last Price</td>
+                    <td id="lastPrice">My Company</td>
+                </tr>
+                <tr>
+                    <td>Change</td>
+                    <td id="change">My Company
+                            <!-- <img id="arrow" src="https://csci571.com/hw/hw6/images/GreenArrowUp.jpg"> -->
+                    </td>
+                </tr>
+                <tr>
+                    <td>Change Percent</td>
+                    <td id="changePercent">My Company</td>
+                </tr>
+                <tr>
+                    <td>Number of Shares Traded</td>
+                    <td id="numShares">My Company</td>
+                </tr>
+            </table>
+    
+        </div>
+
+        <div class="infoTable" id="barButton3">
+            <h2> chart</h2>
+    
+        </div>
+
+        <div class="cards" id="barButton4">
+            <div class="card" id="card1">
+                <img id="img1" src="">
+                <div class="text">
+                    <span  id="title1"><b>Title</b></span><br>
+                    <span  id="date1">Published Date: </span><br>
+                    <a href="#" id="url1" target="_blank">See Original Post</a>
+                </div>
+    
+            </div>
+            <div class="card" id="card2">
+                <img id="img2" src="">
+                <div class="text">
+                    <span  id="title2"><b>Title</b></span><br>
+                    <span  id="date2">Published Date: </span><br>
+                    <a href="#" id="url2" target="_blank">See Original Post</a>
+                </div>
+            </div>
+            <div class="card" id="card3">
+                <img id="img3" src="">
+                <div class="text">
+                    <span  id="title3"><b>Title</b></span><br>
+                    <span  id="date3">Published Date: </span><br>
+                    <a href="#" id="url3" target="_blank">See Original Post</a>
+                </div>
+            </div>
+            <div class="card" id="card4">
+                <img id="img4" src="">
+                <div class="text">
+                    <span  id="title4"><b>Title</b></span><br>
+                    <span  id="date4">Published Date: </span><br>
+                    <a href="#" id="url4" target="_blank">See Original Post</a>
+                </div>
+            </div>
+            <div class="card" id="card5">
+                <img id="img5" src="">
+                <div class="text">
+                    <span  id="title5"><b>Title</b></span><br>
+                    <span  id="date5">Published Date: </span><br>
+                    <a href="#" id="url5" target="_blank">See Original Post</a>
+                </div>
+            </div>
+    
+        </div>
+
+   
+        
+
+
+    </div>
+    <div id="error">
+        <span> <b>Error: No record has been found, please enter a valid symbol.</b></span>
+    </div>
+
+
+</body>
+</html>
